@@ -1,0 +1,40 @@
+from google.colab import output
+
+def detect_segmentation_error(text: str) -> bool:
+    """
+    Analyzes a two-speaker transcript marked with "Speaker1:" / "Speaker2:" and returns:
+      - False if all text goes under one speaker.
+      - False if any segment block contains both speaker labels.
+      - Otherwise True.
+    """
+    # Normalize markers and split into labeled blocks
+    tmp = text.replace("Speaker 1:", "|Speaker1:").replace("Speaker 2:", "|Speaker2:")
+    tmp = tmp.replace("Speaker1:", "|Speaker1:").replace("Speaker2:", "|Speaker2:") # Handle both cases
+    parts = [p.strip() for p in tmp.split("|") if p.strip()]
+    blocks = [p.split(" ", 1) for p in parts if ":" in p]
+    blocks = [(lbl.rstrip(":"), cnt) for lbl, cnt in blocks]
+
+    # Collect full text per speaker
+    full = {"Speaker1": "", "Speaker2": ""}
+    for lbl, cnt in blocks:
+        full[lbl] += cnt + " "
+
+    # Case 1: one speaker never speaks
+    if not full["Speaker1"].strip() or not full["Speaker2"].strip():
+        return False
+
+    # Case 2: any block contains the other speaker's label
+    for lbl, cnt in blocks:
+        if "Speaker1:" in cnt or "Speaker2:" in cnt:
+            return False
+
+    return True
+
+# ▶️ Prompt for input with clear UI
+output.clear()
+print("Enter your full conversation transcript using 'Speaker1:' and 'Speaker2:' markers:")
+text = input()
+
+# ▶️ Run validation
+ok = detect_segmentation_error(text)
+print(f"\n✅ Properly segmented? {ok}")
